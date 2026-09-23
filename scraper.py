@@ -14,6 +14,8 @@ Lichte feed om BESTAANDE producten bij te werken: prijs + beschikbaarheid.
                  VOORRAADBELEID, niet op een aantal.
   sku          = de variantcode van Alka (AV150.1.3.NL)
   barcode      = EAN
+  description  = de volledige tekst van alka.nl (info + gebruik + ingredienten).
+                 EENMALIG mappen; zie hieronder.
   image /      = de foto's van DEZE variant. Alka koppelt zijn afbeeldingen aan
   image_links    variantcodes, dus elke Deo-geur krijgt zijn eigen flesje. Heeft
                  een variant geen eigen foto's, dan die van de productpagina.
@@ -22,8 +24,15 @@ Lichte feed om BESTAANDE producten bij te werken: prijs + beschikbaarheid.
 Er staat bewust geen kostprijs in de feed: wat wij bij Alka betalen ligt niet
 vast in dit project. Zie README.md.
 
-Bewust GEEN description: dat beschermt de eigen teksten in de winkel.
-Voor teksten en afbeeldingen is er `add_scraper.py`.
+**`description` zit er WEL in, maar map hem alleen EENMALIG.** Deze feed draait
+2x per dag. Laat je `description` in de Stock Sync-mapping staan, dan zet hij
+elke twaalf uur de tekst terug naar die van Alka - ook over een herschrijving
+van Nova heen. Map hem dus voor die ene run en haal hem er daarna uit. (Bij
+Vitakruid ging het precies zo mis met de titels.)
+
+De tekst is onbewerkt van alka.nl: Themis keurde er op 23-09-2026 24 van de 31
+af. Op een concept is dat geen probleem, op een LIVE pagina wel. Zet er dus
+kort daarna de burst-run overheen (gfy-nova/batch.py).
 
 Naast de XML schrijft dit script `alka_staffelkortingen.csv` - dezelfde
 bundelkortingen, maar leesbaar, om naast de inkoopprijzen te leggen.
@@ -111,6 +120,10 @@ def build_xml(producten):
             add(item, "pakket_inhoud",
                 pakket_tekst(v["pakket_inhoud"]) if v["is_pakket"] else "")
             add(item, "bron_url", p["url"])
+
+            # Alleen voor een eenmalige tekst-inhaalslag; zie de kop van dit
+            # bestand. Niet permanent mappen.
+            add(item, "description", p["omschrijving"])
 
             # Afbeeldingen per EAN: Alka hangt zijn foto's aan variantcodes,
             # dus de Deo-varianten krijgen elk hun eigen flesje mee.
