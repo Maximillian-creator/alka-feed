@@ -54,21 +54,20 @@ HANDKOPPELING = {
     ("alka-basische-scrub-ph-7-6", ""):
         ("8718546785009", "zelfde product, Alka noemt het nu 'Alka® Scrub - 250g'"),
     ("alka-basische-kruiden-thee", "48 zakjes"):
-        ("8718546783029", "48 zakjes = 48 filterzakjes; onze prijs ligt €1,50 hoger"),
+        ("8718546783029", "48 zakjes = 48 filterzakjes; EAN bijgewerkt 23-09-2026 (was 8718546783241, vorige versie)"),
     ("alka-basische-kruiden-thee", "96 zakjes"):
-        ("8718546783050", "96 zakjes = 96 filterzakjes; onze prijs ligt €2,00 hoger"),
+        ("8718546783050", "96 zakjes = 96 filterzakjes; EAN bijgewerkt 23-09-2026 (was 8718546783449, vorige versie)"),
     ("alka-greens", "10 Stuks"):
-        ("8718546784262", "10 sticks (80g); onze prijs ligt €1,50 hoger"),
+        ("8718546784262", "10 sticks (80g) Multi+; EAN bijgewerkt 23-09-2026 (was 8718546784125, vorige versie)"),
     ("alka-greens", "30 Stuks"):
-        ("8718546784309", "30 sticks (240g); onze prijs ligt €3,00 hoger"),
+        ("8718546784309", "30 sticks (240g) Multi+; EAN bijgewerkt 23-09-2026 (was 8718546784040, vorige versie)"),
     ("alka-badzout", "250 GR"):
         ("8718546782121", "250 gram = de reisverpakking 5 x 50g, zelfde prijs"),
     ("alka®-spermidine-forte", ""):
         ("8718546785320", "zelfde spermidine-chlorellacomplex, Alka liet 'Forte' vallen"),
     ("alka®-scrub-pads", ""):
-        ("", "GEEN luffa-scrubsponzen meer in de catalogus van alka.nl (50 varianten "
-             "nagelopen op 10-09-2026) - navragen bij de vertegenwoordiger of dit nog "
-             "leverbaar is; zo niet: uitfaseren"),
+        ("", "uit het assortiment (besluit Max 23-09-2026). Alka voert de "
+             "luffa-scrubsponzen niet meer; niet opnieuw voorstellen."),
 }
 
 # Alleen ons eigen Alka-merk. "Mattisson AlkaGreens" en "Terranova Alkaline"

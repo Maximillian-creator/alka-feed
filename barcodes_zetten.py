@@ -5,13 +5,17 @@ Zet de EAN (en de variantcode van Alka als SKU) op onze Alka-varianten, zodat
 Stock Sync de feed kan matchen. Leest `alka_barcodes.csv`, dat `koppeling.py`
 schrijft.
 
-    python barcodes_zetten.py            # DROOGLOOP: toont alleen wat er zou gebeuren
-    python barcodes_zetten.py --doen     # schrijft echt
+    python barcodes_zetten.py                 # DROOGLOOP: toont alleen wat er zou gebeuren
+    python barcodes_zetten.py --doen          # schrijft echt
+    python barcodes_zetten.py --overschrijf   # ook varianten die al een ANDERE barcode hebben
 
 Sloten:
 - Een variant die al een barcode heeft die afwijkt van het voorstel wordt
   OVERGESLAGEN, niet overschreven. Dat is de enige onomkeerbare fout die hier
-  gemaakt kan worden.
+  gemaakt kan worden. Met `--overschrijf` gebeurt het wel; de oude waarde staat
+  dan in het logboek, zodat het terug te draaien is. Gebruikt op 23-09-2026 voor
+  de vier varianten die nog de EAN van de vorige productversie droegen (Thee
+  48/96, Greens 10/30), op verzoek van Max.
 - Hetzelfde voor een SKU die al gevuld is.
 - Elke wijziging komt in `alka_barcodes_gezet.csv` te staan: wat er stond, wat
   er nu staat, en het antwoord van Shopify. Zonder dat logboek is "21 gezet"
@@ -135,6 +139,7 @@ def lees_voorstel():
 
 def main():
     doen = "--doen" in sys.argv
+    overschrijf = "--overschrijf" in sys.argv
     store, token = toegang()
     if not (store and token):
         print("Geen toegang tot Shopify: SHOPIFY_STORE plus ofwel een "
@@ -166,8 +171,11 @@ def main():
             overslaan.append((r, "variant bestaat niet meer in de winkel"))
             continue
         if nu.get("barcode") and nu["barcode"] != r["barcode zetten"]:
-            overslaan.append((r, f"heeft al barcode {nu['barcode']}"))
-            continue
+            if not overschrijf:
+                overslaan.append((r, f"heeft al barcode {nu['barcode']}"))
+                continue
+            print(f"  VERVANGEN  {r['product'][:38]:38} {r['variant'][:18]:18} "
+                  f"{nu['barcode']} -> {r['barcode zetten']}")
         if nu.get("barcode") == r["barcode zetten"] and (nu.get("sku") or "") == r["sku zetten"]:
             overslaan.append((r, "stond al goed"))
             continue
