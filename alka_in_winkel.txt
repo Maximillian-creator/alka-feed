@@ -1,5 +1,6 @@
 # EAN's van Alka-artikelen die al in onze Shopify staan.
 # Geschreven door koppeling.py met de Admin API.
+4046681001406
 8718546780011
 8718546780042
 8718546780103
