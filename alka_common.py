@@ -46,7 +46,10 @@ import requests
 
 BASE_URL = "https://www.alka.nl"
 SITEMAP_URL = f"{BASE_URL}/sitemap.xml"
-BRAND = "Alka"
+# De merknaam zoals die in ONZE winkel staat (11 producten, 23-09-2026), niet
+# zoals Alka zichzelf schrijft. Zou de feed "Alka" leveren, dan krijg je twee
+# merken naast elkaar en werkt filteren op leverancier niet meer.
+BRAND = "Alka Vitae"
 REQUEST_DELAY = 0.4
 
 HEADERS = {
