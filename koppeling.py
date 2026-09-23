@@ -1,11 +1,15 @@
 """
 Koppeling: onze Alka-producten <-> de Alka-feed
 ===============================================
-**Zonder deze stap doet de update-feed niets.** Alle 22 Alka-varianten in onze
-Shopify hebben een LEGE SKU én GEEN barcode (peiling 09-09-2026 via de publieke
-productlijst). Stock Sync matcht op SKU of barcode; is allebei leeg, dan vindt
-hij nul artikelen en werkt hij niets bij - precies de stille fout die eerder een
-hele leverancierscatalogus stilzette.
+**Zonder deze stap doet de update-feed niets.** Stock Sync matcht op SKU of
+barcode; zijn allebei leeg, dan vindt hij nul artikelen en werkt hij niets bij -
+precies de stille fout die eerder een hele leverancierscatalogus stilzette.
+
+Let op bij het meten: de publieke `products.json` geeft `barcode` NIET vrij (hij
+staat er altijd als leeg in). Op 09-09-2026 leidde dat tot de conclusie "alle 22
+varianten hebben geen barcode", en dat was fout: vier hadden er wel een. Daarom
+haalt dit script de barcodes via de Admin API op zodra dat kan, en zegt het
+erbij wanneer het dat niet kon.
 
 Dit script legt onze producten naast de feed en schrijft een voorstel:
 
@@ -79,6 +83,34 @@ def normaliseer(tekst):
     return " ".join(tekst.split())
 
 
+def echte_barcodes(producten):
+    """Barcode en SKU per variant-id, via de Admin API.
+
+    De publieke productlijst liegt hier niet, maar zwijgt: `barcode` komt er
+    altijd leeg uit. Zonder deze stap zou de kolom "onze barcode" suggereren
+    dat alles leeg is.
+    """
+    try:
+        from barcodes_zetten import toegang, graphql
+        store, token = toegang()
+        if not (store and token):
+            return None
+        ids = [f"gid://shopify/ProductVariant/{v['id']}"
+               for p in producten for v in p["variants"]]
+        uit = {}
+        vraag = ("query($ids: [ID!]!) { nodes(ids: $ids) { "
+                 "... on ProductVariant { id barcode sku } } }")
+        for i in range(0, len(ids), 50):
+            for n in graphql(store, token, vraag, {"ids": ids[i:i + 50]})["nodes"]:
+                if n:
+                    uit[int(n["id"].rsplit("/", 1)[-1])] = (n.get("barcode") or "",
+                                                            n.get("sku") or "")
+        return uit
+    except Exception as e:
+        print(f"  (barcodes niet via de Admin API op te halen: {e})")
+        return None
+
+
 def winkelproducten():
     producten, pagina = [], 1
     while pagina < 25:
@@ -140,8 +172,23 @@ def main():
         return 1
     kandidaten = feedvarianten()
     onze = winkelproducten()
+    varianten = sum(len(p["variants"]) for p in onze)
     print(f"{len(onze)} producten met merk '{ONZE_VENDOR}' in de winkel, "
-          f"{len(kandidaten)} varianten in de feed\n")
+          f"{varianten} varianten; {len(kandidaten)} varianten in de feed")
+
+    echt = echte_barcodes(onze)
+    if echt is None:
+        print("  LET OP: geen Admin-API-toegang. De kolommen 'onze sku' en 'onze "
+              "barcode' komen dan uit de publieke lijst, en die geeft de barcode "
+              "NOOIT vrij - lees ze niet als 'leeg'.\n")
+    else:
+        for p in onze:
+            for v in p["variants"]:
+                v["barcode"], v["sku"] = echt.get(
+                    v["id"], (v.get("barcode") or "", v.get("sku") or ""))
+        gevuld = sum(1 for p in onze for v in p["variants"] if v["barcode"])
+        print(f"  gemeten via de Admin API: {gevuld} van de {varianten} varianten "
+              f"heeft al een barcode\n")
 
     per_ean = {k["barcode"]: k for k in kandidaten}
     tellen = {"handmatig": 0, "zeker": 0, "controleren": 0, "onzeker": 0,
@@ -167,6 +214,10 @@ def main():
                 hand = HANDKOPPELING.get((p["handle"], varianttitel))
                 if hand:
                     ean, toelichting = hand
+                    if v.get("barcode") and v["barcode"] != ean:
+                        toelichting = (f"LET OP: staat al op {v['barcode']}, een EAN "
+                                       f"die Alka nergens meer voert (oude versie). "
+                                       + toelichting)
                     k = per_ean.get(ean, k) if ean else None
                     oordeel = "handmatig" if ean else "niet leverbaar"
                     naamscore = 1.0 if ean else 0.0
@@ -217,7 +268,12 @@ def main():
                 f"{verschil:+.2f}".replace(".", ","),
                 "onze prijs wijkt af van de adviesprijs" if abs(verschil) >= 0.005 else "",
             ])
-    print(f"\nGeschreven: {BARCODES} ({len(tezetten)} varianten klaar om te zetten)")
+    al_goed = sum(1 for _, v, _, _, _, k, _ in tezetten if v.get("barcode") == k["barcode"])
+    conflict = sum(1 for _, v, _, _, _, k, _ in tezetten
+                   if v.get("barcode") and v["barcode"] != k["barcode"])
+    print(f"\nGeschreven: {BARCODES} ({len(tezetten)} regels: {al_goed} staat al goed, "
+          f"{conflict} heeft een andere barcode dan Alka opgeeft, "
+          f"{len(tezetten) - al_goed - conflict} nog te zetten)")
 
     # 2. Wat Alka voert en wij niet - de uitbreidingskant.
     ontbreekt = [k for k in kandidaten if k["barcode"] not in gekoppeld]

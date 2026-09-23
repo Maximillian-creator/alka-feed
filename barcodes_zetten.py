@@ -17,15 +17,23 @@ Sloten:
   er nu staat, en het antwoord van Shopify. Zonder dat logboek is "21 gezet"
   een getal dat je moet geloven.
 
-Het token: zet in `.env` naast dit script (staat in .gitignore, de repo is
-publiek):
+Toegang: net als de andere agents haalt dit script zélf een token op met de
+CLIENT_ID + CLIENT_SECRET van de custom app (client_credentials-grant, zie
+`gfy-orderdata`: `shopify_token_client_credentials`). Er hoeft dus **geen**
+`shpat_`-token ergens te staan, en er mag zeker geen nieuw token gemaakt of
+geroteerd worden - dat zou de agents op de VPS stilzetten.
 
-    SHOPIFY_STORE=goodforyoubeverwijk.myshopify.com
-    SHOPIFY_ADMIN_TOKEN=shpat_...
+Gezocht wordt, in deze volgorde:
 
-Nodig scope: `write_products`. Schrijf dat bestand NIET met PowerShell
-Set-Content of Out-File -Encoding utf8 - die zetten een BOM voor de eerste
-regel en dan is de eerste variabele stuk.
+  1. de omgevingsvariabelen SHOPIFY_CLIENT_ID / SHOPIFY_CLIENT_SECRET
+  2. `.env` naast dit script
+  3. `../../gfy-gaia/.env` (waar ze in dit project al stonden)
+
+Een los SHOPIFY_ADMIN_TOKEN wordt gebruikt als het er is. Nodig: scope
+`write_products` (stond op 23-09-2026 aan).
+
+Schrijf een `.env` NIET met PowerShell Set-Content of Out-File -Encoding utf8 -
+die zetten een BOM voor de eerste regel en dan is de eerste variabele stuk.
 """
 
 import csv
@@ -33,6 +41,7 @@ import json
 import os
 import ssl
 import sys
+import urllib.parse
 import urllib.request
 
 HIER = os.path.dirname(os.path.abspath(__file__))
@@ -58,8 +67,7 @@ query($ids: [ID!]!) {
 """
 
 
-def env():
-    pad = os.path.join(HIER, ".env")
+def _lees_env(pad):
     waarden = {}
     if os.path.exists(pad):
         for regel in open(pad, encoding="utf-8-sig"):
@@ -67,21 +75,54 @@ def env():
             if regel and not regel.startswith("#") and "=" in regel:
                 k, v = regel.split("=", 1)
                 waarden[k.strip()] = v.strip().strip('"')
-    store = os.environ.get("SHOPIFY_STORE") or waarden.get("SHOPIFY_STORE")
-    token = os.environ.get("SHOPIFY_ADMIN_TOKEN") or waarden.get("SHOPIFY_ADMIN_TOKEN")
-    return store, token
+    return waarden
 
 
-def graphql(store, token, query, variabelen):
+def _ssl_context():
     ctx = ssl.create_default_context()
     if os.environ.get("INSECURE_SSL") == "1":
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
+    return ctx
+
+
+def toegang():
+    """Store + token. Het token wordt zo nodig vers opgehaald met de client-app."""
+    waarden = {}
+    for pad in (os.path.join(HIER, ".env"),
+                os.path.join(HIER, "..", "..", "gfy-gaia", ".env")):
+        for k, v in _lees_env(pad).items():
+            waarden.setdefault(k, v)
+
+    def haal(naam):
+        return (os.environ.get(naam) or waarden.get(naam) or "").strip()
+
+    store = haal("SHOPIFY_STORE")
+    token = haal("SHOPIFY_ADMIN_TOKEN")
+    if store and token:
+        return store, token
+
+    cid, secret = haal("SHOPIFY_CLIENT_ID"), haal("SHOPIFY_CLIENT_SECRET")
+    if not (store and cid and secret):
+        return store, None
+    data = urllib.parse.urlencode({
+        "client_id": cid, "client_secret": secret,
+        "grant_type": "client_credentials"}).encode()
+    req = urllib.request.Request(
+        f"https://{store}/admin/oauth/access_token", data=data,
+        headers={"Content-Type": "application/x-www-form-urlencoded",
+                 "Accept": "application/json"})
+    with urllib.request.urlopen(req, timeout=30, context=_ssl_context()) as r:
+        return store, json.loads(r.read())["access_token"]
+
+
+def graphql(store, token, query, variabelen):
     req = urllib.request.Request(
         f"https://{store}/admin/api/{API}/graphql.json",
         data=json.dumps({"query": query, "variables": variabelen}).encode(),
         headers={"X-Shopify-Access-Token": token, "Content-Type": "application/json"})
-    antwoord = json.load(urllib.request.urlopen(req, timeout=40, context=ctx))
+    antwoord = json.load(urllib.request.urlopen(req, timeout=40,
+                                                context=_ssl_context()))
     if antwoord.get("errors"):
         raise SystemExit(f"Shopify gaf een fout: {antwoord['errors']}")
     return antwoord["data"]
@@ -94,10 +135,11 @@ def lees_voorstel():
 
 def main():
     doen = "--doen" in sys.argv
-    store, token = env()
+    store, token = toegang()
     if not (store and token):
-        print("Geen SHOPIFY_STORE / SHOPIFY_ADMIN_TOKEN gevonden.")
-        print("Zet ze in .env naast dit script (zie de uitleg bovenin) en probeer opnieuw.")
+        print("Geen toegang tot Shopify: SHOPIFY_STORE plus ofwel een "
+              "ADMIN_TOKEN ofwel CLIENT_ID + CLIENT_SECRET ontbreken.")
+        print("Zie de uitleg bovenin dit script. Maak GEEN nieuw token aan.")
         return 1
     if not os.path.exists(INVOER):
         print(f"{os.path.basename(INVOER)} ontbreekt - draai eerst 'python koppeling.py'")

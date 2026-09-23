@@ -121,47 +121,51 @@ hij welke pagina's het betrof. Een verzonnen voorraadstand is erger dan geen.
 Verder stopt de scraper bij minder dan 25 productpagina's of 40 varianten, en
 bij twee varianten met dezelfde EAN.
 
-## Eerst koppelen, anders doet de feed niets
+## Koppelen: gedaan op 23-09-2026
 
-**Alle 22 Alka-varianten in onze Shopify hebben een lege SKU én geen barcode**
-(peiling 09-09-2026). Stock Sync matcht op SKU of barcode; zijn allebei leeg,
-dan vindt hij nul artikelen en gebeurt er niets — zonder foutmelding.
+Stock Sync matcht op SKU of barcode. Stand nu, gemeten via de Admin API:
 
-```bash
-python scraper.py      # maakt alka_feed.xml
-python koppeling.py    # maakt alka_koppeling.csv
-```
+- **17 varianten hebben hun EAN en variantcode gekregen** (`barcodes_zetten.py`,
+  logboek in `alka_barcodes_gezet.csv`).
+- **4 varianten hadden al een barcode, en een andere dan Alka opgeeft.** Die zijn
+  bewust NIET overschreven. Het zijn de Thee (48 en 96 zakjes) en de Greens (10
+  en 30 sticks). Hun EAN's komen op geen enkele Alka-site voor - niet op alka.nl,
+  niet op alka.be, niet op alka.eu. Het zijn dus **vorige productversies**; Alka
+  voert nu "Greens Multi+" en een vernieuwde thee, en vraagt er minder voor:
 
-Stand 10-09-2026: **14 zeker + 7 met de hand nagekeken = 21 klaar** in
-`alka_barcodes.csv`. De zeven handmatige beslissingen staan met reden in
-`HANDKOPPELING` bovenin `koppeling.py`, zodat een volgende run ze niet opnieuw
-hoeft te raden.
+  | Ons artikel | Onze EAN | Onze prijs | Alka nu | EAN nu | Adviesprijs |
+  |---|---|---|---|---|---|
+  | Thee 48 zakjes | 8718546783241 | € 16,45 | Thee - 48 filterzakjes | 8718546783029 | € 14,95 |
+  | Thee 96 zakjes | 8718546783449 | € 26,95 | Thee - 96 filterzakjes | 8718546783050 | € 24,95 |
+  | Greens 10 Stuks | 8718546784125 | € 16,45 | Greens Multi+ 10 sticks 80g | 8718546784262 | € 14,95 |
+  | Greens 30 Stuks | 8718546784040 | € 42,95 | Greens Multi+ 30 sticks 240g | 8718546784309 | € 39,95 |
 
-Eén artikel blijft over: **Alka® Scrub Pads** (€ 10,75, luffa-sponzen). Die staat
-niet meer tussen de 50 varianten van alka.nl. Navragen bij de vertegenwoordiger:
-nog leverbaar, of uitfaseren?
+  Zolang die vier op de oude EAN staan, raakt de feed ze niet aan. Dat is
+  voorlopig de veilige stand: pas als vaststaat welke versie er in het magazijn
+  ligt, hoort daar een keuze gemaakt te worden.
 
-Let ook op de kolom `prijsverschil` — wat wij vragen min wat alka.nl vraagt.
-Vier varianten staan bij ons **hoger** geprijsd dan bij Alka zelf:
-
-| Ons artikel | Onze prijs | Bij Alka |
-|---|---|---|
-| Alka Basische Kruiden Thee 48 zakjes | € 16,45 | € 14,95 |
-| Alka Basische Kruiden Thee 96 zakjes | € 26,95 | € 24,95 |
-| Alka Greens 10 Stuks | € 16,45 | € 14,95 |
-| Alka Greens 30 Stuks | € 42,95 | € 39,95 |
-
-Wie `price` klakkeloos mapt, verlaagt daar zijn eigen prijs. Alka verkoopt zelf
-aan consumenten, dus boven hun prijs zitten is zichtbaar — maar het blijft een
-keuze, geen fout.
-
-Vier handles bevatten een letterlijke `®` (`alka®-scrub-pads`,
-`alka®-spermidine-forte`, `alka®-basencaps-calcium`, `alka®-basencaps-magnesium`).
-Dat geeft URL's met `%C2%AE`. Wijzigen kan, maar alleen mét redirect.
+> **De publieke `products.json` geeft `barcode` niet vrij.** Op 09-09-2026 leidde
+> dat tot de conclusie "alle 22 varianten hebben geen barcode". Dat was fout: er
+> waren er vier gevuld. `koppeling.py` meet nu via de Admin API en zegt het
+> erbij wanneer dat niet lukt.
 
 **Stock Sync → Product Identificeerder = Barcode (EAN).** De variantcode van
-Alka (`AV150.1.3.NL`) gaat mee in `sku`, zodat die lege SKU's in dezelfde
-beweging gevuld kunnen worden.
+Alka (`AV150.1.3.NL`) staat nu ook als `sku` in de winkel.
+
+### Toegang tot Shopify
+
+Er hoeft **geen** `shpat_`-token te bestaan en er mag er zeker geen nieuw
+gemaakt of geroteerd worden: dat zou Vega, Sirius, Gaia en Atlas op de VPS
+stilzetten. `barcodes_zetten.py` haalt net als de andere agents zelf een token
+op met `SHOPIFY_CLIENT_ID` + `SHOPIFY_CLIENT_SECRET` (client_credentials-grant,
+zie `gfy-orderdata.shopify_token_client_credentials`). Die staan in
+`gfy-gaia/.env` en de app heeft `write_products`.
+
+```bash
+python koppeling.py                    # meet de winkel, schrijft het voorstel
+python barcodes_zetten.py              # droogloop
+python barcodes_zetten.py --doen       # schrijft, slaat conflicten over
+```
 
 ## Add-feed: concept-only
 
