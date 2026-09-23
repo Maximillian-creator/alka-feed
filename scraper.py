@@ -14,6 +14,9 @@ Lichte feed om BESTAANDE producten bij te werken: prijs + beschikbaarheid.
                  VOORRAADBELEID, niet op een aantal.
   sku          = de variantcode van Alka (AV150.1.3.NL)
   barcode      = EAN
+  image /      = de foto's van DEZE variant. Alka koppelt zijn afbeeldingen aan
+  image_links    variantcodes, dus elke Deo-geur krijgt zijn eigen flesje. Heeft
+                 een variant geen eigen foto's, dan die van de productpagina.
 
 **De staffel is de consumentenkorting van alka.nl zelf, geen inkoopafspraak.**
 Er staat bewust geen kostprijs in de feed: wat wij bij Alka betalen ligt niet
@@ -108,6 +111,15 @@ def build_xml(producten):
             add(item, "pakket_inhoud",
                 pakket_tekst(v["pakket_inhoud"]) if v["is_pakket"] else "")
             add(item, "bron_url", p["url"])
+
+            # Afbeeldingen per EAN: Alka hangt zijn foto's aan variantcodes,
+            # dus de Deo-varianten krijgen elk hun eigen flesje mee.
+            beelden = ac.afbeeldingen_voor(p, v)
+            add(item, "image", beelden[0] if beelden else "")
+            add(item, "image_links", ",".join(beelden))
+            blok = ET.SubElement(item, "images")
+            for src in beelden:
+                add(ET.SubElement(blok, "image"), "src", src)
     return root
 
 

@@ -204,6 +204,54 @@ def _voorraad(flat):
     return None
 
 
+def _afbeeldingen(flat):
+    """(alle, per variantcode, algemeen).
+
+    Alka hangt zijn foto's aan variantcodes: in een `swiper-slide` staat een
+    `sylius-image-variants`-blokje met de code erin. Zo hoort
+    'Deo-Original-75ml-1-voorkant.jpg' bij AV330.2.1.NL en niet bij de vier
+    andere geuren. Slides zonder code zijn sfeer- en USP-beelden die bij het
+    hele product horen.
+
+    De galerij staat er twee keer in (grote swiper + duimnagels); elk pad komt
+    daarom maar één keer in de lijst, in de volgorde van de pagina.
+    """
+    alle, per, algemeen = [], {}, []
+    for slide in flat.split('<div class="swiper-slide">')[1:]:
+        paden = _AFBEELDING_RE.findall(slide)
+        if not paden:
+            continue
+        pad = BASE_URL + paden[0]
+        if pad not in alle:
+            alle.append(pad)
+        # Alleen de codes die VOOR de afbeelding staan. De laatste slide loopt
+        # door tot het einde van de pagina, en daar staat het staffelblok met
+        # alle variantcodes erin; zonder deze grens zou dat beeld aan elke
+        # variant gekoppeld worden.
+        kop = slide[:slide.find('data-original-image-path')]
+        codes = re.findall(r'data-variant-code="([^"]+)"', kop)
+        if codes:
+            for code in codes:
+                if pad not in per.setdefault(code, []):
+                    per[code].append(pad)
+        elif pad not in algemeen:
+            algemeen.append(pad)
+    return alle, per, algemeen
+
+
+def afbeeldingen_voor(product, variant):
+    """De foto's van deze variant: eerst de zijne, dan de algemene van de pagina.
+
+    Heeft de variant geen eigen foto's (de meeste producten hebben er maar één),
+    dan zijn het gewoon alle foto's van de pagina - in de volgorde die Alka
+    aanhoudt, dus met de voorkant eerst.
+    """
+    eigen = product.get("afb_per_variant", {}).get(variant["code"], [])
+    if not eigen:
+        return product["afbeeldingen"]
+    return eigen + [p for p in product.get("afb_algemeen", []) if p not in eigen]
+
+
 def _optielabels(flat):
     """variantcode -> het label uit de variantkeuze ('60 capsules', '75ml')."""
     labels = {}
@@ -264,7 +312,7 @@ def parse_pagina(url, html, tel=None):
 
     titel = _tekst(_H1_RE.search(flat).group(1)) if _H1_RE.search(flat) else ""
     ondertitel = _tekst(_H2_RE.search(flat).group(1)) if _H2_RE.search(flat) else ""
-    afbeeldingen = [BASE_URL + p for p in dict.fromkeys(_AFBEELDING_RE.findall(flat))]
+    afbeeldingen, afb_per_variant, afb_algemeen = _afbeeldingen(flat)
     op_voorraad = _voorraad(flat)
     labels = _optielabels(flat)
 
@@ -352,6 +400,8 @@ def parse_pagina(url, html, tel=None):
         "titel": titel,
         "ondertitel": ondertitel,
         "afbeeldingen": afbeeldingen,
+        "afb_per_variant": afb_per_variant,
+        "afb_algemeen": afb_algemeen,
         "teksten": teksten,
         "omschrijving": "\n".join(teksten.get(k, "") for k in TEKSTSECTIES
                                   if teksten.get(k)).strip(),

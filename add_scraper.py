@@ -21,6 +21,7 @@ Lokaal: INSECURE_SSL=1, MAX_PRODUCTEN=5.
 """
 
 import csv
+import os
 import time
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
@@ -29,6 +30,8 @@ import alka_common as ac
 from scraper import add, korting_pct, nette_naam, pakket_tekst, save_xml
 
 OUTPUT_FILE = "alka_add_feed.xml"
+NIEUW_FILE = "alka_add_feed_nieuw.xml"
+IN_WINKEL = "alka_in_winkel.txt"
 BRON_FILE = "alka_tekstbron.csv"
 FEED_URL = ("https://raw.githubusercontent.com/Maximillian-creator/"
             "alka-feed/main/alka_add_feed.xml")
@@ -37,8 +40,8 @@ FEED_URL = ("https://raw.githubusercontent.com/Maximillian-creator/"
 def build_xml(producten):
     root = ET.Element("products")
     for p in producten:
-        afbeeldingen = p["afbeeldingen"]
         for v in p["varianten"]:
+            afbeeldingen = ac.afbeeldingen_voor(p, v)
             staffel = dict(v["staffel"])
             item = ET.SubElement(root, "product")
             add(item, "handle", p["handle"])
@@ -108,6 +111,40 @@ def schrijf_tekstbron(producten, pad=BRON_FILE):
     print(f"Tekstbron geschreven: {pad}")
 
 
+def reeds_in_winkel():
+    """EAN's die al in onze Shopify staan, uit alka_in_winkel.txt (koppeling.py)."""
+    if not os.path.exists(IN_WINKEL):
+        return None
+    return {r.strip() for r in open(IN_WINKEL, encoding="utf-8")
+            if r.strip() and not r.startswith("#")}
+
+
+def schrijf_nieuw_feed(producten):
+    """Een tweede feed met alleen de artikelen die wij NIET voeren.
+
+    De volledige add-feed bevat ook wat al in de winkel staat. Wie die op een
+    Stock Sync-taak zet die velden bijwerkt, schrijft onze eigen teksten over
+    met die van Alka - en die zijn door Themis afgekeurd (24 van de 31 op
+    23-09-2026). Deze feed kan dat niet: wat wij al hebben zit er niet in.
+
+    Zonder `alka_in_winkel.txt` wordt er GEEN gefilterde feed geschreven. Een
+    ongefilterde feed onder die naam zou het gevaarlijkst zijn wat er is: hij
+    heet dan "nieuw" en bevat alles.
+    """
+    bezet = reeds_in_winkel()
+    if bezet is None:
+        print(f"{NIEUW_FILE} NIET geschreven: {IN_WINKEL} ontbreekt. "
+              f"Draai eerst koppeling.py (die heeft Shopify-toegang nodig).")
+        return
+    root = build_xml(producten)
+    weg = [p for p in root.findall("product") if p.findtext("barcode") in bezet]
+    for p in weg:
+        root.remove(p)
+    save_xml(root, NIEUW_FILE)
+    print(f"  {len(weg)} regels eruit (staan al in de winkel), "
+          f"{len(root.findall('product'))} nieuw")
+
+
 def main():
     print("Alka ADD-feed gestart\n")
     start = time.time()
@@ -116,6 +153,7 @@ def main():
     varianten = ac.controleer(producten, tel)
 
     save_xml(build_xml(producten), OUTPUT_FILE)
+    schrijf_nieuw_feed(producten)
     schrijf_tekstbron(producten)
 
     dun = [p["handle"] for p in producten

@@ -46,6 +46,7 @@ FEED = "alka_feed.xml"
 UIT = "alka_koppeling.csv"
 BARCODES = "alka_barcodes.csv"
 UITBREIDING = "alka_uitbreiding.csv"
+IN_WINKEL = "alka_in_winkel.txt"
 
 # Met de hand nagekeken op 10-09-2026, omdat naam of prijs niet vanzelf matcht.
 # (onze handle, onze varianttitel) -> (EAN bij Alka, waarom)
@@ -107,6 +108,38 @@ def echte_barcodes(producten):
         return uit
     except Exception as e:
         print(f"  (barcodes niet via de Admin API op te halen: {e})")
+        return None
+
+
+def feed_eans_in_winkel(kandidaten):
+    """Welke EAN's uit de feed komen ERGENS in de winkel voor?
+
+    Bewust de hele winkel, niet alleen de producten met merk "Alka Vitae": op
+    23-09-2026 stond Alka Vliesmaskers als CONCEPT in de winkel. Concepten
+    staan niet in de publieke lijst, dus de add-feed zou dat product een tweede
+    keer hebben aangemaakt.
+    """
+    try:
+        from barcodes_zetten import toegang, graphql
+        store, token = toegang()
+        if not (store and token):
+            return None
+        gezocht = {k["barcode"] for k in kandidaten}
+        vraag = ("query($cursor: String) { products(first: 250, after: $cursor) { "
+                 "pageInfo { hasNextPage endCursor } edges { node { variants(first: 100) "
+                 "{ edges { node { barcode } } } } } } }")
+        gevonden, cursor = set(), None
+        while True:
+            d = graphql(store, token, vraag, {"cursor": cursor})["products"]
+            for e in d["edges"]:
+                for v in e["node"]["variants"]["edges"]:
+                    if v["node"]["barcode"] in gezocht:
+                        gevonden.add(v["node"]["barcode"])
+            if not d["pageInfo"]["hasNextPage"]:
+                return sorted(gevonden)
+            cursor = d["pageInfo"]["endCursor"]
+    except Exception as e:
+        print(f"  (winkel niet te scannen op feed-EANs: {e})")
         return None
 
 
@@ -274,7 +307,22 @@ def main():
           f"{conflict} heeft een andere barcode dan Alka opgeeft, "
           f"{len(tezetten) - al_goed - conflict} nog te zetten)")
 
-    # 2. Wat Alka voert en wij niet - de uitbreidingskant.
+    # 2. De EAN's die al in de winkel zitten, vastgelegd voor de add-feed.
+    #    GitHub Actions heeft geen Shopify-toegang; zonder dit bestand kan de
+    #    gefilterde add-feed daar niet gemaakt worden.
+    bezet = feed_eans_in_winkel(kandidaten)
+    if bezet is not None:
+        with open(IN_WINKEL, "w", encoding="utf-8", newline="\n") as f:
+            f.write("# EAN's van Alka-artikelen die al in onze Shopify staan.\n")
+            f.write("# Geschreven door koppeling.py met de Admin API.\n")
+            f.write("\n".join(bezet) + "\n")
+        print(f"Geschreven: {IN_WINKEL} ({len(bezet)} van de {len(kandidaten)} "
+              f"feed-artikelen staan al in de winkel)")
+    else:
+        print(f"{IN_WINKEL} NIET bijgewerkt: geen Admin-API-toegang. "
+              f"De gefilterde add-feed gebruikt dan een oudere lijst.")
+
+    # 3. Wat Alka voert en wij niet - de uitbreidingskant.
     ontbreekt = [k for k in kandidaten if k["barcode"] not in gekoppeld]
     with open(UITBREIDING, "w", encoding="utf-8-sig", newline="") as f:
         w = csv.writer(f, delimiter=";")

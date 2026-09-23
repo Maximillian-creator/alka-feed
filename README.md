@@ -8,7 +8,8 @@ dus de gegevens komen uit de HTML van de productpagina's (Sylius-winkel).
 | Feed | Script | Output | Doel | Schema |
 |---|---|---|---|---|
 | **Update-feed** | `scraper.py` | `alka_feed.xml` | Prijs + beschikbaarheid van **bestaande** producten | 2× per dag (05:20 + 17:20 UTC) |
-| **Add-feed** | `add_scraper.py` | `alka_add_feed.xml` | **Nieuwe** producten aanmaken met álle info | 1× per week (ma 03:20 UTC) |
+| **Add-feed** | `add_scraper.py` | `alka_add_feed.xml` | **Nieuwe** producten aanmaken met álle info (alle 50) | 1× per week (ma 03:20 UTC) |
+| **Add-feed (alleen nieuw)** | `add_scraper.py` | `alka_add_feed_nieuw.xml` | Alleen wat wij nog NIET voeren — 28 regels | idem |
 | Staffeloverzicht | `scraper.py` | `alka_staffelkortingen.csv` | De bundelkortingen om naast de inkoop te leggen | met de update-feed |
 | Tekstbron | `add_scraper.py` | `alka_tekstbron.csv` | Waar elke tekst vandaan komt, per variant | met de add-feed |
 | Koppelvoorstel | `koppeling.py` | `alka_koppeling.csv` | Onze winkel naast de feed leggen | eenmalig, met de hand |
@@ -18,9 +19,25 @@ dus de gegevens komen uit de HTML van de productpagina's (Sylius-winkel).
 ## Feed-URL's (Stock Sync)
 
 ```
-Update:  https://raw.githubusercontent.com/Maximillian-creator/alka-feed/main/alka_feed.xml
-Add:     https://raw.githubusercontent.com/Maximillian-creator/alka-feed/main/alka_add_feed.xml
+Update:      https://raw.githubusercontent.com/Maximillian-creator/alka-feed/main/alka_feed.xml
+Add (nieuw): https://raw.githubusercontent.com/Maximillian-creator/alka-feed/main/alka_add_feed_nieuw.xml
+Add (alles): https://raw.githubusercontent.com/Maximillian-creator/alka-feed/main/alka_add_feed.xml
 ```
+
+> Gebruik voor Stock Sync **`alka_add_feed_nieuw.xml`**. De volledige add-feed
+> bevat ook de 22 artikelen die al in de winkel staan; een taak die velden
+> bijwerkt zou onze eigen teksten overschrijven met die van Alka - en die zijn
+> door Themis afgekeurd. Welke EAN's al bezet zijn staat in `alka_in_winkel.txt`,
+> geschreven door `koppeling.py` (die scant de héle winkel, dus ook concepten:
+> Vliesmaskers stond er als concept in en zou anders dubbel zijn aangemaakt).
+
+## Afbeeldingen per EAN
+
+Alka koppelt zijn foto's aan variantcodes (`sylius-image-variants` in de
+galerij). Beide feeds geven daarom **per variant de juiste foto's** mee in
+`image` (de hoofdfoto) en `image_links` (alle, komma-gescheiden): elke Deo-geur
+krijgt zijn eigen flesje, niet vijf keer hetzelfde plaatje. Heeft een variant
+geen eigen foto's, dan die van de productpagina, met de voorkant eerst.
 
 ## Nulmeting 09-09-2026
 

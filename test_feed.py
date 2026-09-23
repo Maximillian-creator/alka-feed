@@ -235,6 +235,56 @@ def test_koppeling_overleeft_een_actie_van_de_leverancier():
     assert naam >= 0.6, naam
 
 
+def slide(pad, code=None):
+    merk = (f'<div class="sylius-image-variants"><div data-variant-code="{code}">'
+            f'</div></div>' if code else "")
+    return (f'<div class="swiper-slide">{merk}'
+            f'<img data-original-image-path="{pad}"></div>')
+
+
+GALERIJ = (
+    '<h1 class="me-2">Alka® Deo</h1>' + VOORRAAD_JA
+    + slide("/media/deo-sfeer.jpg")
+    + slide("/media/deo-original-75ml.jpg", "AV330.2.1.NL")
+    + slide("/media/deo-0parfum-75ml.jpg", "AV330.4.1.NL")
+    + slide("/media/deo-original-75ml.jpg", "AV330.2.1.NL")   # duimnagel, dubbel
+    + '<div id="tier_prices_tables">'
+    + tier_blok("AV330.2.1.NL", "8718546781285",
+                "Alka® Deo - Original - 75ml - NL", 1495, [(1, 1495)])
+    + tier_blok("AV330.4.1.NL", "8718546781964",
+                "Alka® Deo - 0% Parfum - 75ml - NL", 1495, [(1, 1495)])
+    + "</div>")
+
+
+def test_afbeeldingen_horen_bij_de_juiste_variant():
+    """Alka hangt zijn foto's aan variantcodes. Zonder die koppeling zou elke
+    Deo-geur het flesje van de eerste krijgen - vijf keer hetzelfde plaatje op
+    vijf verschillende EAN's."""
+    p = ac.parse_pagina(URL, GALERIJ)
+    origineel, parfum = p["varianten"][0], p["varianten"][1]
+    eigen_o = ac.afbeeldingen_voor(p, origineel)
+    eigen_p = ac.afbeeldingen_voor(p, parfum)
+    assert eigen_o[0].endswith("deo-original-75ml.jpg"), eigen_o
+    assert eigen_p[0].endswith("deo-0parfum-75ml.jpg"), eigen_p
+    # het sfeerbeeld hoort bij allebei, het flesje van de ander bij geen van twee
+    assert any(u.endswith("deo-sfeer.jpg") for u in eigen_o)
+    assert not any(u.endswith("deo-0parfum-75ml.jpg") for u in eigen_o)
+    # de galerij staat twee keer in de pagina; elk pad hoort er een keer in
+    assert len(eigen_o) == len(set(eigen_o)) == 2, eigen_o
+
+
+def test_variant_zonder_eigen_foto_krijgt_die_van_de_pagina():
+    """De meeste producten hebben een enkele variant en geen codes bij de foto's."""
+    los = ('<h1 class="me-2">Alka® Scrub</h1>' + VOORRAAD_JA
+           + slide("/media/scrub-1.jpg") + slide("/media/scrub-2.jpg")
+           + '<div id="tier_prices_tables">'
+           + tier_blok("AV320.2.1.NL", "8718546785009", "Alka® Scrub - 250g - NL",
+                       2495, [(1, 2495)]) + "</div>")
+    p = ac.parse_pagina(URL, los)
+    beelden = ac.afbeeldingen_voor(p, p["varianten"][0])
+    assert [u.rsplit("/", 1)[-1] for u in beelden] == ["scrub-1.jpg", "scrub-2.jpg"]
+
+
 def test_live():
     """Drie echte pagina's: EAN geldig, prijzen kloppend, staffel oplopend
     goedkoper, en bij een pakket telt de inhoud op tot de normale prijs."""
