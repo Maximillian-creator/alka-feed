@@ -19,9 +19,10 @@ Per regel staat er een oordeel:
   onzeker      allebei niet -> waarschijnlijk uit het assortiment van Alka
 
 Het beste voorstel staat er altijd bij, ook bij 'onzeker', met de kolom
-`prijsverschil`: wat wij vragen min wat alka.nl vraagt. Drie artikelen staan bij
-ons hoger geprijsd dan bij Alka zelf; wie `price` klakkeloos mapt, verlaagt daar
-zijn eigen prijs.
+`verschil met advies`: wat wij vragen min de adviesprijs van Alka. Vier
+varianten staan bij ons hoger; wie `price` klakkeloos mapt, verlaagt daar zijn
+eigen prijs. De kolom `dagprijs alka` staat er los naast, want daar zit een
+lopende actie in (sinds 23-09-2026: -20% op de hele catalogus).
 
 Er wordt niets gewijzigd in Shopify. Het CSV is de invoer voor een eenmalige
 handmatige import van de barcodes; daarna kan de feed zijn werk doen.
@@ -98,6 +99,7 @@ def feedvarianten(pad=FEED):
         "barcode": p.findtext("barcode") or "",
         "sku": p.findtext("sku") or "",
         "titel": p.findtext("title") or "",
+        "advies": float(p.findtext("price") or 0),
         "prijs": float(p.findtext("actieprijs") or 0),
         "soort": p.findtext("soort") or "",
         "url": p.findtext("bron_url") or "",
@@ -113,11 +115,20 @@ def gelijkenis(a, b):
 
 
 def beste(onze_titel, onze_prijs, kandidaten):
+    """Match op de ADVIESPRIJS, niet op de dagprijs.
+
+    Op 23-09-2026 zette Alka de hele catalogus 20% af. Wie op de dagprijs
+    vergelijkt, ziet dan opeens nergens meer een prijs die klopt: 14 koppelingen
+    die "zeker" waren vielen terug naar "controleren" en het bestand met
+    barcodes slonk van 21 naar 7 regels - zonder dat er iets mis was. De
+    adviesprijs (26,95) blijft staan, de actieprijs (21,56) niet.
+    """
     genormaliseerd = normaliseer(onze_titel)
     gescoord = []
     for k in kandidaten:
         naam = gelijkenis(genormaliseerd, normaliseer(k["titel"]))
-        prijs_gelijk = abs(k["prijs"] - onze_prijs) < 0.005
+        prijs_gelijk = (abs(k["advies"] - onze_prijs) < 0.005
+                        or abs(k["prijs"] - onze_prijs) < 0.005)
         gescoord.append((naam + (0.3 if prijs_gelijk else 0), naam, prijs_gelijk, k))
     gescoord.sort(key=lambda r: -r[0])
     return gescoord[0] if gescoord else None
@@ -141,8 +152,9 @@ def main():
         w = csv.writer(f, delimiter=";")
         w.writerow(["onze handle", "ons product", "onze prijs", "onze sku",
                     "onze barcode", "oordeel", "barcode (ean)",
-                    "variantcode", "artikel bij alka", "prijs bij alka",
-                    "prijsverschil", "naamgelijkenis", "toelichting", "bron"])
+                    "variantcode", "artikel bij alka", "adviesprijs alka",
+                    "dagprijs alka", "verschil met advies", "naamgelijkenis",
+                    "toelichting", "bron"])
         for p in onze:
             for v in p["variants"]:
                 prijs = float(v.get("price") or 0)
@@ -166,7 +178,8 @@ def main():
                     oordeel, toelichting = "onzeker", ""
                 tellen[oordeel] += 1
 
-                verschil = (prijs - k["prijs"]) if k else 0.0
+                # Vergelijken met de ADVIESPRIJS; de dagprijs kan een actie zijn.
+                verschil = (prijs - k["advies"]) if k else 0.0
                 if oordeel in ("handmatig", "zeker") and k:
                     gekoppeld.add(k["barcode"])
                     tezetten.append((p, v, varianttitel, titel, prijs, k, verschil))
@@ -175,6 +188,7 @@ def main():
                     v.get("sku") or "", v.get("barcode") or "", oordeel,
                     k["barcode"] if k else "", k["sku"] if k else "",
                     k["titel"] if k else "",
+                    f"{k['advies']:.2f}".replace(".", ",") if k else "",
                     f"{k['prijs']:.2f}".replace(".", ",") if k else "",
                     f"{verschil:+.2f}".replace(".", ",") if k else "",
                     f"{naamscore:.2f}".replace(".", ","), toelichting,
@@ -189,16 +203,19 @@ def main():
     # 1. De regels die klaarstaan om in Shopify gezet te worden.
     with open(BARCODES, "w", encoding="utf-8-sig", newline="") as f:
         w = csv.writer(f, delimiter=";")
-        w.writerow(["handle", "product", "variant", "variant id", "barcode zetten",
-                    "sku zetten", "onze prijs", "prijs bij alka", "prijsverschil",
-                    "let op"])
+        w.writerow(["handle", "product", "product id", "variant", "variant id",
+                    "barcode zetten",
+                    "sku zetten", "onze prijs", "adviesprijs alka",
+                    "dagprijs alka", "verschil met advies", "let op"])
         for p, v, varianttitel, titel, prijs, k, verschil in tezetten:
             w.writerow([
-                p["handle"], p["title"], varianttitel or "Default Title", v["id"],
+                p["handle"], p["title"], p["id"],
+                varianttitel or "Default Title", v["id"],
                 k["barcode"], k["sku"], f"{prijs:.2f}".replace(".", ","),
+                f"{k['advies']:.2f}".replace(".", ","),
                 f"{k['prijs']:.2f}".replace(".", ","),
                 f"{verschil:+.2f}".replace(".", ","),
-                "onze prijs wijkt af van alka.nl" if abs(verschil) >= 0.005 else "",
+                "onze prijs wijkt af van de adviesprijs" if abs(verschil) >= 0.005 else "",
             ])
     print(f"\nGeschreven: {BARCODES} ({len(tezetten)} varianten klaar om te zetten)")
 
@@ -207,9 +224,10 @@ def main():
     with open(UITBREIDING, "w", encoding="utf-8-sig", newline="") as f:
         w = csv.writer(f, delimiter=";")
         w.writerow(["barcode (ean)", "variantcode", "artikel", "soort",
-                    "prijs bij alka", "bron"])
+                    "adviesprijs alka", "dagprijs alka", "bron"])
         for k in sorted(ontbreekt, key=lambda x: (x["soort"], x["titel"])):
             w.writerow([k["barcode"], k["sku"], k["titel"], k["soort"],
+                        f"{k['advies']:.2f}".replace(".", ","),
                         f"{k['prijs']:.2f}".replace(".", ","), k["url"]])
     pakketten = sum(1 for k in ontbreekt if k["soort"] == "voordeelpakket")
     print(f"Geschreven: {UITBREIDING} ({len(ontbreekt)} varianten die wij niet "

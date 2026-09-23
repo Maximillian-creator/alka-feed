@@ -212,6 +212,29 @@ def test_advies_en_faq_blijven_buiten_de_tekst():
     assert "040" not in p["omschrijving"], p["omschrijving"]
 
 
+def test_koppeling_overleeft_een_actie_van_de_leverancier():
+    """Een actie bij de leverancier mag de koppeling niet slopen.
+
+    Op 23-09-2026 zette Alka de hele catalogus 20% af. De koppeling vergeleek
+    toen nog met de dagprijs: 14 regels die "zeker" waren vielen terug naar
+    "controleren" en het barcodebestand slonk van 21 naar 7 - terwijl er niets
+    mis was. Sindsdien weegt de adviesprijs mee.
+    """
+    from koppeling import beste
+    kandidaten = [
+        {"barcode": "8718546781049", "sku": "AV150.1.3.NL",
+         "titel": "Alka® BasenCaps Original - 60 capsules",
+         "advies": 26.95, "prijs": 21.56, "soort": "artikel", "url": ""},
+        {"barcode": "8718546782435", "sku": "AV230.3.1.NL",
+         "titel": "Alka® Mineralen - 60 caps",
+         "advies": 24.95, "prijs": 19.96, "soort": "artikel", "url": ""},
+    ]
+    _, naam, prijs_gelijk, k = beste("Alka® BasenCaps Original", 26.95, kandidaten)
+    assert k["sku"] == "AV150.1.3.NL", k["titel"]
+    assert prijs_gelijk is True, "adviesprijs 26,95 moet blijven tellen"
+    assert naam >= 0.6, naam
+
+
 def test_live():
     """Drie echte pagina's: EAN geldig, prijzen kloppend, staffel oplopend
     goedkoper, en bij een pakket telt de inhoud op tot de normale prijs."""

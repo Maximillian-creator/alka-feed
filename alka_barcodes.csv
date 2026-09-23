@@ -1,22 +1,22 @@
-﻿handle;product;variant;variant id;barcode zetten;sku zetten;onze prijs;prijs bij alka;prijsverschil;let op
-alka®-spermidine-forte;Alka® Spermidine Forte;Default Title;53869108330831;8718546785320;AV240.2.6.NL;29,95;29,95;+0,00;
-alka®-basencaps-magnesium;Alka® BasenCaps Magnesium;Default Title;53869094764879;8718546781797;AV225.1.3.NL;26,95;26,95;+0,00;
-alka®-basencaps-calcium;Alka® BasenCaps Calcium;Default Title;53868854182223;8718546781544;AV200.1.2.NL;26,95;26,95;+0,00;
-alka-basische-scrub-ph-7-6;Alka Basische Scrub pH 7,6;Default Title;47939053355343;8718546785009;AV320.2.1.NL;24,95;24,95;+0,00;
-alka-druppels;Alka® Zuur-base druppels;Default Title;47939007873359;8718546780547;AV100.1.1.NL;29,95;29,95;+0,00;
-alka-badzout;Alka Badzout;250 GR;43506269454571;8718546782121;AV300.1.5.NL;10,75;10,75;+0,00;
-alka-badzout;Alka Badzout;600 GR;43506269487339;8718546780165;AV300.1.0.NL;16,45;16,45;+0,00;
-alka-badzout;Alka Badzout;1200 GR;43506269520107;8718546782046;AV300.1.1.NL;26,95;26,95;+0,00;
-alka-badzout;Alka Badzout;2400 GR;43506269552875;8718546780196;AV300.1.3.NL;42,95;42,95;+0,00;
-alka-creme;Alka Créme;50 ML;43506257395947;8718546780011;AV310.6.1.NL;16,45;16,45;+0,00;
-alka-creme;Alka Créme;150 ML;43506257428715;8718546780042;AV310.5.1.NL;32,35;32,35;+0,00;
-alka-deo;Alka Deo;Original (75ml);43506251268331;8718546781285;AV330.2.1.NL;14,95;14,95;+0,00;
-alka-deo;Alka Deo;0% Parfum (75ml);53867790729551;8718546781964;AV330.4.1.NL;14,95;14,95;+0,00;
-alka-deo;Alka Deo;Flower Blossom (75ml);53867790762319;8718546781872;AV330.5.1.NL;14,95;14,95;+0,00;
-alka-deo;Alka Deo;Fresh Cotton (75ml);53867790795087;8718546781902;AV330.6.1.NL;14,95;14,95;+0,00;
-alka-deo;Alka Deo;Into the Woods (75ml);53867790827855;8718546781933;AV330.7.1.NL;14,95;14,95;+0,00;
-alka-basische-kruiden-thee;Alka Basische Kruiden Thee;48 zakjes;43506243535083;8718546783029;AV250.2.2.NL;16,45;14,95;+1,50;onze prijs wijkt af van alka.nl
-alka-basische-kruiden-thee;Alka Basische Kruiden Thee;96 zakjes;43506243567851;8718546783050;AV250.2.4.NL;26,95;24,95;+2,00;onze prijs wijkt af van alka.nl
-alka®-basencaps-original;Alka® BasenCaps Original;Default Title;43506223481067;8718546781049;AV150.1.3.NL;26,95;26,95;+0,00;
-alka-greens;Alka Greens;10 Stuks;43506185601259;8718546784262;AV350.3.10.NL;16,45;14,95;+1,50;onze prijs wijkt af van alka.nl
-alka-greens;Alka Greens;30 Stuks;43506185634027;8718546784309;AV350.3.30.NL;42,95;39,95;+3,00;onze prijs wijkt af van alka.nl
+﻿handle;product;product id;variant;variant id;barcode zetten;sku zetten;onze prijs;adviesprijs alka;dagprijs alka;verschil met advies;let op
+alka®-spermidine-forte;Alka® Spermidine Forte;14945864221007;Default Title;53869108330831;8718546785320;AV240.2.6.NL;29,95;29,95;23,96;+0,00;
+alka®-basencaps-magnesium;Alka® BasenCaps Magnesium;14945861566799;Default Title;53869094764879;8718546781797;AV225.1.3.NL;26,95;26,95;21,56;+0,00;
+alka®-basencaps-calcium;Alka® BasenCaps Calcium;14945785577807;Default Title;53868854182223;8718546781544;AV200.1.2.NL;26,95;26,95;21,56;+0,00;
+alka-basische-scrub-ph-7-6;Alka Basische Scrub pH 7,6;8790035431759;Default Title;47939053355343;8718546785009;AV320.2.1.NL;24,95;24,95;19,96;+0,00;
+alka-druppels;Alka® Zuur-base druppels;8790019244367;Default Title;47939007873359;8718546780547;AV100.1.1.NL;29,95;29,95;23,96;+0,00;
+alka-badzout;Alka Badzout;7906973941995;250 GR;43506269454571;8718546782121;AV300.1.5.NL;10,75;10,75;8,60;+0,00;
+alka-badzout;Alka Badzout;7906973941995;600 GR;43506269487339;8718546780165;AV300.1.0.NL;16,45;16,45;13,16;+0,00;
+alka-badzout;Alka Badzout;7906973941995;1200 GR;43506269520107;8718546782046;AV300.1.1.NL;26,95;26,95;21,56;+0,00;
+alka-badzout;Alka Badzout;7906973941995;2400 GR;43506269552875;8718546780196;AV300.1.3.NL;42,95;42,95;34,36;+0,00;
+alka-creme;Alka Créme;7906966110443;50 ML;43506257395947;8718546780011;AV310.6.1.NL;16,45;16,45;13,16;+0,00;
+alka-creme;Alka Créme;7906966110443;150 ML;43506257428715;8718546780042;AV310.5.1.NL;32,35;32,35;25,88;+0,00;
+alka-deo;Alka Deo;7906961293547;Original (75ml);43506251268331;8718546781285;AV330.2.1.NL;14,95;14,95;11,96;+0,00;
+alka-deo;Alka Deo;7906961293547;0% Parfum (75ml);53867790729551;8718546781964;AV330.4.1.NL;14,95;14,95;11,96;+0,00;
+alka-deo;Alka Deo;7906961293547;Flower Blossom (75ml);53867790762319;8718546781872;AV330.5.1.NL;14,95;14,95;11,96;+0,00;
+alka-deo;Alka Deo;7906961293547;Fresh Cotton (75ml);53867790795087;8718546781902;AV330.6.1.NL;14,95;14,95;11,96;+0,00;
+alka-deo;Alka Deo;7906961293547;Into the Woods (75ml);53867790827855;8718546781933;AV330.7.1.NL;14,95;14,95;11,96;+0,00;
+alka-basische-kruiden-thee;Alka Basische Kruiden Thee;7906955395307;48 zakjes;43506243535083;8718546783029;AV250.2.2.NL;16,45;14,95;11,96;+1,50;onze prijs wijkt af van de adviesprijs
+alka-basische-kruiden-thee;Alka Basische Kruiden Thee;7906955395307;96 zakjes;43506243567851;8718546783050;AV250.2.4.NL;26,95;24,95;19,96;+2,00;onze prijs wijkt af van de adviesprijs
+alka®-basencaps-original;Alka® BasenCaps Original;7906939732203;Default Title;43506223481067;8718546781049;AV150.1.3.NL;26,95;26,95;21,56;+0,00;
+alka-greens;Alka Greens;7906914271467;10 Stuks;43506185601259;8718546784262;AV350.3.10.NL;16,45;14,95;11,96;+1,50;onze prijs wijkt af van de adviesprijs
+alka-greens;Alka Greens;7906914271467;30 Stuks;43506185634027;8718546784309;AV350.3.30.NL;42,95;39,95;31,96;+3,00;onze prijs wijkt af van de adviesprijs
