@@ -183,7 +183,10 @@ def main():
     producten = ac.fetch_products(tel)
     varianten = ac.controleer(producten, tel)
 
-    save_xml(build_xml(producten), OUTPUT_FILE)
+    root = build_xml(producten)
+    import prijsrem
+    print(prijsrem.verslag(prijsrem.pas_toe(root, OUTPUT_FILE)))
+    save_xml(root, OUTPUT_FILE)
     schrijf_staffel_csv(producten)
 
     met_staffel = sum(1 for p in producten for v in p["varianten"] if v["staffel"])
